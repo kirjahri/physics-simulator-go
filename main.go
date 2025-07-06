@@ -11,7 +11,7 @@ type Ball struct {
 	position rl.Vector2
 	radius   float32
 	color    rl.Color
-	velocity float32
+	velocity rl.Vector2
 	isStill  bool
 }
 
@@ -47,8 +47,8 @@ func (g *Game) Update() {
 		if !b.isStill {
 			threshold := screenHeight - b.radius
 
-			g.balls[i].velocity += gravity * multiplier
-			newY := g.balls[i].position.Y + g.balls[i].velocity*deltaTime
+			g.balls[i].velocity.Y += gravity * multiplier
+			newY := g.balls[i].position.Y + g.balls[i].velocity.Y*deltaTime
 
 			if newY >= threshold {
 				// Correct the ball's position by subtracting how far it "penetrates" into the ground
@@ -57,12 +57,12 @@ func (g *Game) Update() {
 
 				// If the ball's speed and distance to the ground are low enough, stop it completely
 				// This prevents the ball from jittering when close to the ground
-				if math.Abs(float64(g.balls[i].velocity)) < minimum && math.Abs(float64(g.balls[i].position.Y-threshold)) < minimum {
-					g.balls[i].velocity = 0
+				if math.Abs(float64(g.balls[i].velocity.Y)) < minimum && math.Abs(float64(g.balls[i].position.Y-threshold)) < minimum {
+					g.balls[i].velocity.Y = 0
 					g.balls[i].position.Y = threshold
 					g.balls[i].isStill = true
 				} else {
-					g.balls[i].velocity *= -friction
+					g.balls[i].velocity.Y *= -friction
 				}
 			} else {
 				g.balls[i].position.Y = newY
