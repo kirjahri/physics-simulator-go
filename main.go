@@ -1,64 +1,91 @@
 package main
 
 import (
-	raylib "github.com/gen2brain/raylib-go/raylib"
+	"math"
+
+	rl "github.com/gen2brain/raylib-go/raylib"
 )
 
 type Ball struct {
-	position raylib.Vector2
+	position rl.Vector2
 	radius   float32
-	color    raylib.Color
+	color    rl.Color
 	velocity float32
+	isStill  bool
 }
 
 type Game struct {
 	ball Ball
 }
 
+const (
+	screenWidth  = 800
+	screenHeight = 450
+	gravity      = 9.8
+	multiplier   = 1
+	friction     = 0.85
+	minimum      = 55
+)
+
 func (g *Game) Init() {
 	g.ball = Ball{
-		position: raylib.NewVector2(float32(screenWidth/2), float32(screenHeight/2)),
+		position: rl.NewVector2(float32(screenWidth/2), float32(screenHeight/2)),
 		radius:   20,
-		color:    raylib.White,
+		color:    rl.White,
 	}
 }
 
-const gravity = 0.098
-
 func (g *Game) Update() {
-	g.ball.velocity += gravity
-	g.ball.position.Y += g.ball.velocity
-	if g.ball.position.Y >= screenHeight {
-		g.ball.position.Y = screenHeight
+	if !g.ball.isStill {
+		deltaTime := rl.GetFrameTime()
+		threshold := screenHeight - g.ball.radius
+
+		g.ball.velocity += gravity * multiplier
+		newY := g.ball.position.Y + g.ball.velocity*deltaTime
+
+		if newY >= threshold {
+			// Correct the ball's position by subtracting how far it "penetrates" into the ground
+			penetration := newY - threshold
+			g.ball.position.Y = threshold - penetration
+
+			// If the ball's speed and distance to the ground are low enough, stop it completely
+			// This prevents the ball from jittering when close to the ground
+			if math.Abs(float64(g.ball.velocity)) < minimum && math.Abs(float64(g.ball.position.Y-threshold)) < minimum {
+				g.ball.velocity = 0
+				g.ball.position.Y = threshold
+				g.ball.isStill = true
+			} else {
+				g.ball.velocity *= -friction
+			}
+		} else {
+			g.ball.position.Y = newY
+		}
 	}
 }
 
 func (g *Game) Draw() {
-	raylib.DrawCircleV(g.ball.position, g.ball.radius, g.ball.color)
+	rl.DrawCircleV(g.ball.position, g.ball.radius, g.ball.color)
 }
 
-const (
-	screenWidth  = 800
-	screenHeight = 600
-)
-
 func main() {
-	raylib.InitWindow(screenWidth, screenHeight, "raylib [core] example - basic window")
-	defer raylib.CloseWindow()
+	rl.SetConfigFlags(rl.FlagWindowHighdpi)
 
-	raylib.SetTargetFPS(60)
+	rl.InitWindow(screenWidth, screenHeight, "raylib")
+	defer rl.CloseWindow()
+
+	rl.SetTargetFPS(160)
 
 	var game Game
 	game.Init()
 
-	for !raylib.WindowShouldClose() {
+	for !rl.WindowShouldClose() {
 		game.Update()
 
-		raylib.BeginDrawing()
+		rl.BeginDrawing()
 
-		raylib.ClearBackground(raylib.Black)
+		rl.ClearBackground(rl.Black)
 		game.Draw()
 
-		raylib.EndDrawing()
+		rl.EndDrawing()
 	}
 }
