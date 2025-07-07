@@ -33,7 +33,7 @@ const (
 func (g *Game) Init() {}
 
 func (g *Game) Update() {
-	deltaTime := rl.GetFrameTime()
+	dt := rl.GetFrameTime()
 
 	if rl.IsMouseButtonPressed(rl.MouseButtonLeft) {
 		g.balls = append(g.balls, Ball{
@@ -47,8 +47,8 @@ func (g *Game) Update() {
 		if !b.isStill {
 			threshold := screenHeight - b.radius
 
-			g.balls[i].velocity.Y += gravity * multiplier * deltaTime
-			newY := g.balls[i].position.Y + g.balls[i].velocity.Y*deltaTime
+			g.balls[i].velocity.Y += gravity * multiplier * dt
+			newY := g.balls[i].position.Y + g.balls[i].velocity.Y*dt
 
 			if newY >= threshold {
 				// Correct the ball's position by subtracting how far it "penetrates" into the ground
