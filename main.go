@@ -23,7 +23,7 @@ const (
 	screenWidth  = 800
 	screenHeight = 450
 	gravity      = 9.8
-	multiplier   = 1
+	multiplier   = 100
 	friction     = 0.7
 	minimum      = 55
 	minBallSize  = 5
@@ -47,7 +47,7 @@ func (g *Game) Update() {
 		if !b.isStill {
 			threshold := screenHeight - b.radius
 
-			g.balls[i].velocity.Y += gravity * multiplier
+			g.balls[i].velocity.Y += gravity * multiplier * deltaTime
 			newY := g.balls[i].position.Y + g.balls[i].velocity.Y*deltaTime
 
 			if newY >= threshold {
