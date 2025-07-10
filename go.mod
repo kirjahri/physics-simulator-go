@@ -1,4 +1,4 @@
-module github.com/kirjahri/physics-simulator-go
+module github.com/kirjahri/physics-engine-go
 
 go 1.24.4
 
