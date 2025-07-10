@@ -14,7 +14,6 @@ type Ball struct {
 	mass         float32
 	acceleration rl.Vector2
 	velocity     rl.Vector2
-	isStill      bool
 }
 
 type Game struct {
@@ -26,21 +25,27 @@ const (
 	screenHeight = 450
 	gravity      = 9.8
 	multiplier   = 100
-	friction     = 0.7
-	minimum      = 55
+	frictionY    = 0.7
+	frictionX    = 0.98
 	minBallMass  = 1
 	maxBallMass  = 5
 	minBallVel   = 1
 	maxBallVel   = 5
 )
 
-func (b *Ball) Update() {
-	dt := rl.GetFrameTime()
+func (b *Ball) Update(dt float32) {
 	b.velocity = rl.Vector2Add(b.velocity, rl.Vector2Scale(b.acceleration, dt))
 	b.position = rl.Vector2Add(b.position, rl.Vector2Scale(b.velocity, dt))
+
+	if b.position.Y > screenHeight-b.radius {
+		b.position.Y = screenHeight - b.radius
+		b.velocity.Y *= -frictionY
+	}
+
+	b.velocity.X *= frictionX
 }
 
-func (b *Ball) CheckEdgeCollision() {
+func (b *Ball) ResolveEdgeCollision() {
 	if b.position.X > screenWidth-b.radius {
 		b.position.X = screenWidth - b.radius
 		b.velocity.X *= -1
@@ -49,16 +54,13 @@ func (b *Ball) CheckEdgeCollision() {
 		b.velocity.X *= -1
 	}
 
-	if b.position.Y > screenHeight-b.radius {
-		b.position.Y = screenHeight - b.radius
-		b.velocity.Y *= -1
-	} else if b.position.Y < b.radius {
+	if b.position.Y < b.radius {
 		b.position.Y = b.radius
 		b.velocity.Y *= -1
 	}
 }
 
-func (b *Ball) CheckBallCollision(otherBall *Ball) {
+func (b *Ball) ResolveBallCollision(otherBall *Ball) {
 	impactVector := rl.Vector2Subtract(otherBall.position, b.position)
 	distance := rl.Vector2Length(impactVector)
 
@@ -94,55 +96,34 @@ func (b *Ball) CheckBallCollision(otherBall *Ball) {
 	}
 }
 
-func (g *Game) Init() {}
+func (g *Game) Init() {
+	g.balls = make([]Ball, 0)
+}
 
 func (g *Game) Update() {
+	dt := rl.GetFrameTime()
+
 	if rl.IsMouseButtonPressed(rl.MouseButtonLeft) {
 		mass := minBallMass + rand.Float32()*(maxBallMass+1-minBallMass)
 		g.balls = append(g.balls, Ball{
-			position: rl.GetMousePosition(),
-			radius:   float32(math.Sqrt(float64(mass))) * 10,
-			color:    rl.Blue,
-			mass:     mass,
-			velocity: rl.NewVector2((minBallVel+rand.Float32()*(maxBallVel+1-minBallVel))*100, (minBallVel+rand.Float32()*(maxBallVel+1-minBallVel))*100),
+			position:     rl.GetMousePosition(),
+			radius:       float32(math.Sqrt(float64(mass))) * 10,
+			color:        rl.Blue,
+			mass:         mass,
+			acceleration: rl.NewVector2(0, gravity*multiplier),
 		})
 	}
 
 	for i := range g.balls {
-		// if !b.isStill {
-		// 	threshold := screenHeight - b.radius
-		//
-		// 	g.balls[i].velocity.Y += gravity * multiplier * dt
-		// 	newY := g.balls[i].position.Y + g.balls[i].velocity.Y*dt
-		//
-		// 	if newY >= threshold {
-		// 		// Correct the ball's position by subtracting how far it "penetrates" into the ground
-		// 		penetration := newY - threshold
-		// 		g.balls[i].position.Y = threshold - penetration
-		//
-		// 		// If the ball's speed and distance to the ground are low enough, stop it completely
-		// 		// This prevents the ball from jittering when close to the ground
-		// 		if math.Abs(float64(g.balls[i].velocity.Y)) < minimum && math.Abs(float64(g.balls[i].position.Y-threshold)) < minimum {
-		// 			g.balls[i].velocity.Y = 0
-		// 			g.balls[i].position.Y = threshold
-		// 			g.balls[i].isStill = true
-		// 		} else {
-		// 			g.balls[i].velocity.Y *= -friction
-		// 		}
-		// 	} else {
-		// 		g.balls[i].position.Y = newY
-		// 	}
-		// }
-
-		g.balls[i].Update()
-		g.balls[i].CheckEdgeCollision()
+		g.balls[i].Update(dt)
+		g.balls[i].ResolveEdgeCollision()
 
 		for j := range g.balls {
 			if g.balls[i] == g.balls[j] {
 				continue
 			}
 
-			g.balls[i].CheckBallCollision(&g.balls[j])
+			g.balls[i].ResolveBallCollision(&g.balls[j])
 		}
 	}
 }
